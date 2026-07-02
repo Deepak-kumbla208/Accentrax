@@ -1,0 +1,85 @@
+name: accentrax
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-accentrax}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-accentrax}
+      POSTGRES_DB: ${POSTGRES_DB:-accentrax}
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-accentrax}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_PORT: 3000
+      API_PREFIX: api/v1
+      CORS_ORIGIN: http://localhost:8080
+      DATABASE_URL: postgresql://${POSTGRES_USER:-accentrax}:${POSTGRES_PASSWORD:-accentrax}@postgres:5432/${POSTGRES_DB:-accentrax}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./data/storage:/app/storage
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-accentrax}:${POSTGRES_PASSWORD:-accentrax}@postgres:5432/${POSTGRES_DB:-accentrax}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data/storage:/app/storage
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+      args:
+        VITE_API_URL: http://localhost:3000/api/v1
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '8080:80'

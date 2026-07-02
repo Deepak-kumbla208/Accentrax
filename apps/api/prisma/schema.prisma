@@ -1,0 +1,21 @@
+// Accentrax database schema.
+// Phase 0: datasource + generator only. Domain models arrive in Phase 1+
+// (users/roles/permissions), Phase 2 (masters), Phase 3 (invoices), Phase 4 (expenses).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Minimal placeholder so the Prisma client generates in Phase 0.
+/// Real domain models (users, roles, permissions, …) arrive from Phase 1.
+model AppMeta {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

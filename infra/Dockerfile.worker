@@ -1,0 +1,27 @@
+# ─── Build stage ───────────────────────────────────────
+FROM node:20-alpine AS build
+RUN corepack enable
+WORKDIR /app
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* .npmrc tsconfig.base.json ./
+COPY packages/config/package.json ./packages/config/
+COPY packages/types/package.json ./packages/types/
+COPY apps/worker/package.json ./apps/worker/
+
+RUN pnpm install
+
+COPY packages ./packages
+COPY apps/worker ./apps/worker
+
+RUN pnpm --filter @accentrax/types build \
+  && pnpm --filter @accentrax/worker build
+
+RUN pnpm --filter @accentrax/worker --prod deploy /app/pruned
+
+# ─── Runtime stage ─────────────────────────────────────
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app/pruned/node_modules ./node_modules
+COPY --from=build /app/apps/worker/dist ./dist
+CMD ["node", "dist/main.js"]
