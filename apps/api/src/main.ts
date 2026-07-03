@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -17,6 +18,7 @@ async function bootstrap() {
   const port = config.get('API_PORT', { infer: true });
   const corsOrigin = config.get('CORS_ORIGIN', { infer: true });
 
+  app.use(cookieParser());
   app.setGlobalPrefix(prefix);
   app.enableCors({ origin: corsOrigin.split(','), credentials: true });
   app.useGlobalPipes(

@@ -1,28 +1,67 @@
+import { Permission } from '@accentrax/types';
 import {
   FileText,
   LayoutDashboard,
+  LogOut,
   Receipt,
   Search,
   Settings,
+  ShieldCheck,
   Users,
 } from 'lucide-react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { usePermissions } from '@/hooks/usePermissions';
+import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/auth';
 
-/**
- * App shell: permission-filtered sidebar + topbar.
- * Nav items are static in Phase 0; Phase 1 filters them by the user's permissions.
- */
+/** App shell: permission-filtered sidebar + topbar. Backend re-enforces every route regardless. */
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/invoices', label: 'Invoices', icon: FileText },
-  { to: '/expenses', label: 'Expenses', icon: Receipt },
-  { to: '/masters', label: 'Masters', icon: Users },
-  { to: '/settings', label: 'Settings', icon: Settings },
-];
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true, permission: null },
+  { to: '/invoices', label: 'Invoices', icon: FileText, end: false, permission: null },
+  { to: '/expenses', label: 'Expenses', icon: Receipt, end: false, permission: null },
+  { to: '/masters', label: 'Masters', icon: Users, end: false, permission: null },
+  {
+    to: '/settings/users',
+    label: 'Users',
+    icon: Users,
+    end: false,
+    permission: Permission.SETTINGS_MANAGE,
+  },
+  {
+    to: '/settings/roles',
+    label: 'Roles',
+    icon: ShieldCheck,
+    end: false,
+    permission: Permission.SETTINGS_MANAGE,
+  },
+] as const;
 
 export function AppLayout() {
+  const { has } = usePermissions();
+  const user = useAuthStore((s) => s.user);
+  const clearSession = useAuthStore((s) => s.clearSession);
+  const navigate = useNavigate();
+
+  const visibleItems = navItems.filter((item) => !item.permission || has(item.permission));
+
+  const initials = user?.name
+    .split(' ')
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } finally {
+      clearSession();
+      navigate('/login', { replace: true });
+    }
+  };
+
   return (
     <div className="flex min-h-screen">
       <aside className="hidden w-60 shrink-0 border-r border-border bg-card md:block">
@@ -33,7 +72,7 @@ export function AppLayout() {
           <span className="font-semibold">Accentrax</span>
         </div>
         <nav className="space-y-1 p-3">
-          {navItems.map((item) => (
+          {visibleItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -66,9 +105,19 @@ export function AppLayout() {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
-              SA
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium"
+              title={user?.name}
+            >
+              {initials ?? <Settings className="h-4 w-4" />}
             </div>
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </header>
 

@@ -16,7 +16,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   /** Models that opt into soft delete (populated as schema grows). */
-  private static readonly softDeleteModels = new Set<string>([]);
+  private static readonly softDeleteModels = new Set<string>(['User', 'Role']);
 
   constructor() {
     super({ log: ['warn', 'error'] });

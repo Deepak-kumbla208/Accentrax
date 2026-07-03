@@ -1,6 +1,7 @@
 // Accentrax database schema.
-// Phase 0: datasource + generator only. Domain models arrive in Phase 1+
-// (users/roles/permissions), Phase 2 (masters), Phase 3 (invoices), Phase 4 (expenses).
+// Phase 0: datasource + generator + placeholder model.
+// Phase 1: users, roles, permissions, RBAC, audit log.
+// Phase 2 (masters), Phase 3 (invoices), Phase 4 (expenses) extend this.
 
 generator client {
   provider = "prisma-client-js"
@@ -11,8 +12,119 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Identity & Access (Phase 1) ──────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  userRoles      UserRole[]
+  companyAccess  UserCompanyAccess[]
+  resourceGrants ResourceGrant[]
+  auditLogs      AuditLog[]
+
+  @@index([deletedAt])
+}
+
+model Role {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  isSystem  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@index([deletedAt])
+}
+
+/// Dynamic permission catalog. Seeded from @accentrax/types PERMISSION_CATALOG.
+model Permission {
+  id    String @id @default(uuid())
+  key   String @unique
+  label String
+  group String
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+/// Which companies a user may see. companyId has no FK yet — the companies
+/// table lands in Phase 2; a migration then adds the relation.
+model UserCompanyAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  companyId String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+}
+
+/// Explicit per-record visibility grant (e.g. "User B may view Invoice X").
+/// resourceType/resourceId are polymorphic by design — no FK.
+model ResourceGrant {
+  id           String   @id @default(uuid())
+  userId       String
+  resourceType String
+  resourceId   String
+  permission   String
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceType, resourceId, permission])
+}
+
+/// Append-only audit trail. Never updated or deleted.
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String?
+  action       String
+  resourceType String
+  resourceId   String?
+  before       Json?
+  after        Json?
+  ip           String?
+  device       String?
+  createdAt    DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([resourceType, resourceId])
+  @@index([actorId])
+}
+
 /// Minimal placeholder so the Prisma client generates in Phase 0.
-/// Real domain models (users, roles, permissions, …) arrive from Phase 1.
 model AppMeta {
   id        String   @id @default(uuid())
   key       String   @unique

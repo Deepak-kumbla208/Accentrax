@@ -3,7 +3,7 @@
  * Keep enums/keys here so frontend and backend never drift.
  */
 
-export * from './roles';
-export * from './permissions';
-export * from './statuses';
-export * from './api';
+export * from './roles.js';
+export * from './permissions.js';
+export * from './statuses.js';
+export * from './api.js';

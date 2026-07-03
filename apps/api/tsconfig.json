@@ -11,7 +11,6 @@
     "rootDir": "./src",
     "sourceMap": true,
     "declaration": false,
-    "incremental": true,
     "strictPropertyInitialization": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false
