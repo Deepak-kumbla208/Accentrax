@@ -16,19 +16,19 @@
 
 **Goal:** Empty-but-runnable monorepo with API, web, worker, DB, and CI wired together.
 
-- [ ] Init Turborepo: `apps/{api,web,worker}`, `packages/{types,config}`
-- [ ] Root tooling: pnpm workspaces, shared `tsconfig`, ESLint + Prettier, `.editorconfig`
-- [ ] `apps/api`: NestJS skeleton, `ConfigModule` (env schema via Zod), `/health` + `/ready`
-- [ ] Prisma: connect Postgres, first migration (empty), `prisma generate`, seed script stub
-- [ ] Global infra providers: `PrismaService`, soft-delete middleware, `AllExceptionsFilter`, pino logger
-- [ ] `apps/web`: Vite + React + TS, Tailwind + shadcn/ui, dark-mode toggle, React Router shell, TanStack Query + axios client, app layout (nav + topbar placeholders)
-- [ ] `apps/worker`: BullMQ bootstrap, connects Redis, sample job round-trips
-- [ ] `packages/types`: shared enums (roles, permission keys, statuses), API envelope types
-- [ ] `infra/`: `docker-compose.yml` (api, worker, web/nginx, postgres, redis), Dockerfiles, `.env.example`, nginx config
-- [ ] CI (GitHub Actions): install → lint → typecheck → test → build
-- [ ] `README` dev setup: `docker compose up`, migrate, seed, run
+- [x] Init Turborepo: `apps/{api,web,worker}`, `packages/{types,config}`
+- [x] Root tooling: pnpm workspaces, shared `tsconfig`, ESLint + Prettier (`.editorconfig` not added — Prettier covers formatting consistency)
+- [x] `apps/api`: NestJS skeleton, `ConfigModule` (env schema via Zod), `/health` + `/health/ready`
+- [x] Prisma: connect Postgres, first migration, `prisma generate`, seed script stub (migration includes a placeholder `AppMeta` model — Prisma requires ≥1 model to generate a client; real domain models replaced/extended this from Phase 1 on)
+- [x] Global infra providers: `PrismaService`, soft-delete middleware, `AllExceptionsFilter`, pino logger
+- [x] `apps/web`: Vite + React + TS, Tailwind + shadcn-style tokens, dark-mode toggle, React Router shell, TanStack Query + axios client, app layout (nav + topbar)
+- [x] `apps/worker`: BullMQ bootstrap, connects Redis, sample job round-trip
+- [x] `packages/types`: shared enums (roles, permission keys, statuses), API envelope types
+- [x] `infra/`: `docker-compose.yml` (api, worker, web/nginx, postgres, redis), Dockerfiles, `.env.example`, nginx config
+- [x] CI (GitHub Actions): install → lint → typecheck → test → build
+- [x] `README` dev setup
 
-**DoD:** `docker compose up` serves the React shell through nginx, API `/health` returns ok, worker processes a test job, CI passes.
+**DoD:** ✅ `docker compose up` serves the React shell through nginx, API `/health` returns ok, worker processes a test job, CI passes.
 
 ---
 
