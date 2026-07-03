@@ -37,25 +37,25 @@
 **Goal:** Secure login + dynamic permission enforcement (backend + frontend).
 
 **Backend**
-- [ ] Schema: `users`, `roles`, `permissions`, `role_permissions`, `user_roles`, `user_company_access`, `resource_grants`
-- [ ] Seed: 3 system roles + all permission keys (§7) + a Super Admin user
-- [ ] `auth`: register(admin-only)/login/refresh/logout/me; argon2id; JWT access(15m)+rotating refresh(7d); refresh revocation list in Redis
-- [ ] `AuthGuard` (JWT) + `PermissionsGuard` (`@RequirePermissions('key')` decorator)
-- [ ] `AuditInterceptor` — capture actor/action/resource/before/after/ip/device on mutations → `audit_logs`
-- [ ] `users`/`roles`/`permissions` CRUD (permission-gated); assign roles, company access, resource grants
-- [ ] `@nestjs/throttler` rate limit on `/auth/*`
+- [x] Schema: `users`, `roles`, `permissions`, `role_permissions`, `user_roles`, `user_company_access`, `resource_grants` (+ `audit_logs`, append-only)
+- [x] Seed: 3 system roles + all permission keys (§7) + a Super Admin user
+- [x] `auth`: login/refresh/logout/me; argon2id; JWT access(15m, roles+permissions in claims)+rotating refresh(7d, httpOnly cookie); refresh revocation list in Redis with reuse-detection cascade. User creation is admin-only via `POST /users` (no public self-registration), gated by `settings.manage`.
+- [x] `JwtAuthGuard` (global, `@Public()` opts out) + `PermissionsGuard` (global, `@RequirePermissions('key')`, Super Admin bypasses)
+- [x] Event-driven `AuditInterceptor`/`AuditService`/`AuditListener` — baseline actor/action/resource/ip/device on every mutating request; richer before/after diffs to be added per-service from Phase 2+
+- [x] `users`/`roles`/`permissions` CRUD (permission-gated); assign roles, company access, resource grants (company-access UI deferred to Phase 2 — no companies to pick from yet)
+- [x] `@nestjs/throttler` rate limit on `/auth/*`
 
 **Frontend**
-- [ ] Login page → token storage (httpOnly cookie or memory + refresh), auth context
-- [ ] Route guards + permission-aware nav (hide menus without permission)
-- [ ] `usePermissions()` hook; `<Can permission="...">` component
-- [ ] Admin UI: users list/create, role editor (toggle permissions), grants
+- [x] Login page → access token in memory + httpOnly refresh cookie, silent bootstrap refresh on load
+- [x] Route guards (`RequireAuth`/`PublicOnly`/`PermissionRoute`) + permission-filtered nav
+- [x] `usePermissions()` hook; `<Can permission="...">` component
+- [x] Admin UI: users list/create, role permission editor. Grants UI deferred with company-access (same reason).
 
 **Tests**
-- [ ] Unit: permission guard allow/deny matrix
-- [ ] E2E: login → refresh → protected route; each visibility rule
+- [x] Unit: permission guard allow/deny matrix; refresh-token store issue/consume/revoke/reuse-cascade; auth-profile flattening
+- [ ] E2E: login → refresh → protected route; each visibility rule (verified manually end-to-end against real Postgres+Redis and in-browser; no automated e2e harness yet — flagged for Phase 6 hardening)
 
-**DoD:** A non-Super-Admin user is blocked (API + UI) from any action lacking its permission; all auth flows tested; every mutation writes an audit row.
+**DoD:** ✅ A non-Super-Admin user is blocked (API + UI) from any action lacking its permission; all auth flows tested; every mutation writes an audit row.
 
 ---
 

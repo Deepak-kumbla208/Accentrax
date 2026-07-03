@@ -76,4 +76,4 @@ docker compose -f infra/docker-compose.yml up
 
 ## Current Status
 
-Design + plan complete. **Next: Phase 0 (foundation scaffolding).** Before Phase 1, confirm Prisma as ORM, obtain the real invoice design (Phase 3 template), and confirm VPS/domain for TLS + webhooks.
+Phase 0 (foundation) and Phase 1 (Auth & RBAC) complete. **Next: Phase 2 (Common Masters)** — companies, customers, taxes, currencies, invoice settings/templates. Before Phase 3, obtain the real invoice design (template source) and confirm VPS/domain for TLS + webhooks.
